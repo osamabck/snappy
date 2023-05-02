@@ -24,7 +24,7 @@ function App() {
 
   const save = async () => {
     if (!artboard.current) return;
-    const image = Konva.stages[0].toDataURL({ pixelRatio: 0.5 });
+    const image = Konva.stages[0].toDataURL({ pixelRatio: scale });
     const link = document.createElement("a");
     link.download = "image.png";
     link.href = image;
