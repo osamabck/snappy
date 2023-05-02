@@ -1,42 +1,37 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./app.scss";
-import domtoimage from "dom-to-image";
 import { v4 as uuidv4 } from "uuid";
+import { Stage, Layer, Rect, Image as Kimage } from "react-konva";
+import Konva from "konva";
 
 function App() {
-  const [roundness, setRoundness] = useState(12);
+  const [roundness, setRoundness] = useState(0);
   const [bg, setBg] = useState("#fafafa");
-  const [gradientDir, setGradientDir] = useState("to right");
   const [useGradient, setUseGradient] = useState(false);
   const [newColor, setNewColor] = useState("#000000");
-  const [pdl, setPdl] = useState(50);
-  const [pdr, setPdr] = useState(50);
-  const [pdt, setPdt] = useState(50);
-  const [pdb, setPdb] = useState(50);
   const [colors, setColors] = useState<{ color: string; id: string }[]>([]);
   const [shdblur, setShdblur] = useState(20);
   const [shdopacity, setShdopacity] = useState(50);
   const [shdcolor, setShdcolor] = useState("#000000");
-  const [uniform, setUniform] = useState(true);
+  const [source, setSource] = useState<HTMLImageElement>();
   const artboard = useRef<HTMLDivElement>(null);
-  const [source, setSource] = useState("");
-
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
-  };
+  const workspace_ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(300);
+  const [h, setH] = useState(300);
+  const [gradientDir, setGradientDir] = useState(JSON.stringify({ start: { x: 0, y: 0 }, end: { x: w, y: h } }));
+  const [scale, setScale] = useState(1);
+  const [autocanvas, setAutocanvas] = useState(true);
 
   const save = async () => {
     if (!artboard.current) return;
-    await domtoimage.toPng(artboard.current).then((data) => {
-      const link = document.createElement("a");
-      link.download = "image.png";
-      link.href = data;
-      link.click();
-    });
+    const image = Konva.stages[0].toDataURL({ pixelRatio: 0.5 });
+    const link = document.createElement("a");
+    link.download = "image.png";
+    link.href = image;
+    link.click();
   };
 
-  const swap_color = (id: string ) => {
+  const swap_color = (id: string) => {
     const input = document.createElement("input");
     input.type = "color";
     input.style.display = "none";
@@ -64,201 +59,215 @@ function App() {
     });
   };
 
+  useEffect(() => {
+    if (!workspace_ref.current) return;
+    workspace_ref.current.addEventListener("wheel", (e) => e.preventDefault(), { passive: false });
+    if (autocanvas) {
+      setW(workspace_ref.current.clientWidth - 50);
+      setH(workspace_ref.current.clientHeight - 50);
+      setGradientDir(
+        JSON.stringify({
+          start: { x: 0, y: 0 },
+          end: { x: workspace_ref.current.clientWidth - 50, y: workspace_ref.current.clientHeight - 50 },
+        }),
+      );
+    }
+  }, []);
+
   return (
     <div className="app">
-      <div className="controls">
-        <button type="button" onClick={save}>
-          Export
-        </button>
-        <div className="control">
-          <label htmlFor="roundness">Roundness</label>
-          <input
-            type="range"
-            name="roundness"
-            min={0}
-            max={200}
-            value={roundness}
-            onChange={(e) => setRoundness(e.currentTarget.valueAsNumber)}
-          />
-        </div>
-        <div className="control">
-          <span>Padding {uniform ? `${pdl}px` : ""}</span>
-          <label>
-            Uniform
-            <input
-              type="radio"
-              name="uniform"
-              checked={uniform ? true : false}
-              onChange={() => {
-                setUniform(true);
-                setPdl(pdl);
-                setPdr(pdl);
-                setPdb(pdl);
-                setPdt(pdl);
-              }}
-            />
-          </label>
-          <label>
-            Separate
-            <input type="radio" name="uniform" checked={uniform ? false : true} onChange={() => setUniform(false)} />
-          </label>
-          {uniform ? (
-            <>
+      <div className="sidebar">
+        <div className="controls">
+          <div className="control">
+            <span className="title">Canvas size</span>
+            <div className="flex-h">
+              <label htmlFor="autocanvas">Auto</label>
               <input
-                type="range"
-                name="pdl"
-                value={pdl}
-                min={0}
-                max={500}
-                onChange={(e) => {
-                  setPdl(e.currentTarget.valueAsNumber);
-                  setPdr(e.currentTarget.valueAsNumber);
-                  setPdb(e.currentTarget.valueAsNumber);
-                  setPdt(e.currentTarget.valueAsNumber);
+                type="checkbox"
+                name="autocanvas"
+                checked={autocanvas ? true : false}
+                onChange={() => {
+                  if (!autocanvas && workspace_ref.current) {
+                    setW(workspace_ref.current.clientWidth - 50);
+                    setH(workspace_ref.current.clientHeight - 50);
+                  }
+                  setAutocanvas(!autocanvas);
                 }}
               />
-            </>
-          ) : (
-            <>
-              <label htmlFor="pdl">left: {pdl}px</label>
+            </div>
+            <div className="flex-h">
+              <label htmlFor="width">Width</label>
+              <input
+                type="number"
+                name="width"
+                value={w}
+                onChange={(e) => {
+                  setAutocanvas(false);
+                  setW(e.currentTarget.valueAsNumber);
+                }}
+              />
+            </div>
+            <div className="flex-h">
+              <label htmlFor="height">Height</label>
+              <input
+                type="number"
+                name="height"
+                value={h}
+                onChange={(e) => {
+                  setAutocanvas(false);
+                  setH(e.currentTarget.valueAsNumber);
+                }}
+              />
+            </div>
+          </div>
+          <div className="control">
+            <label htmlFor="roundness" className="title">
+              Roundness
+            </label>
+            <div className="flex-h">
+              <span>Sharp</span>
               <input
                 type="range"
-                name="pdl"
-                value={pdl}
+                name="roundness"
                 min={0}
                 max={500}
-                onChange={(e) => setPdl(e.currentTarget.valueAsNumber)}
+                value={roundness}
+                onChange={(e) => setRoundness(e.currentTarget.valueAsNumber)}
               />
-              <label htmlFor="pdr">right: {pdr}px</label>
-              <input
-                type="range"
-                name="pdr"
-                value={pdr}
-                min={0}
-                max={500}
-                onChange={(e) => setPdr(e.currentTarget.valueAsNumber)}
-              />
-              <label htmlFor="pdt">top: {pdt}px</label>
-              <input
-                type="range"
-                name="pdt"
-                value={pdt}
-                min={0}
-                max={500}
-                onChange={(e) => setPdt(e.currentTarget.valueAsNumber)}
-              />
-              <label htmlFor="pdb">bottom: {pdb}px</label>
-              <input
-                type="range"
-                name="pdb"
-                value={pdb}
-                min={0}
-                max={500}
-                onChange={(e) => setPdb(e.currentTarget.valueAsNumber)}
-              />
-            </>
-          )}
-        </div>
-        <div className="control">
-          <label htmlFor="shadowcolor">Shadow color</label>
-          <input
-            type="color"
-            name="shadowcolor"
-            onChange={(e) => setShdcolor(e.currentTarget.value)}
-            value={shdcolor}
-          />
-          <label htmlFor="shadowblur">Shadow blur: {shdblur}px</label>
-          <input
-            type="range"
-            name="shadowblur"
-            min={0}
-            max={100}
-            onChange={(e) => setShdblur(e.currentTarget.valueAsNumber)}
-            value={shdblur}
-          />
-          <label htmlFor="shadowopacity">Shadow opacity {shdopacity}%</label>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            name="shadowopacity"
-            onChange={(e) => setShdopacity(e.currentTarget.valueAsNumber)}
-            value={shdopacity}
-          />
-        </div>
-        <div className="control">
-          <label>
-            Use solid color
-            <input
-              type="radio"
-              name="usegradient"
-              checked={useGradient ? false : true}
-              onChange={() => setUseGradient(false)}
-            />
-          </label>
-          <span>
-            Use Gradient
-            <input
-              type="radio"
-              name="usegradient"
-              checked={useGradient ? true : false}
-              onChange={() => setUseGradient(true)}
-            />
-          </span>
-        </div>
-        {useGradient ? (
-          <>
-            <div className="control">
-              <label htmlFor="addgradient">Add gradient color</label>
+              <span>Round</span>
+            </div>
+          </div>
+          <div className="control">
+            <span className="title">Shadow</span>
+            <div className="flex-h">
+              <label htmlFor="shadowcolor">Color</label>
               <input
                 type="color"
-                name="addgradient"
-                onChange={(e) => setNewColor(e.currentTarget.value)}
-                value={newColor}
+                name="shadowcolor"
+                onChange={(e) => setShdcolor(e.currentTarget.value)}
+                value={shdcolor}
               />
-              <button onClick={() => setColors([...colors, { color: newColor, id: uuidv4() }])}>Add</button>
             </div>
-            <div className="control">
-              <span>Gradient colors</span>
-              {colors.map((clr) => (
-                <div key={clr.id}>
-                  <span
-                    onClick={() => swap_color(clr.id)}
-                    style={{
-                      width: "30px",
-                      height: "30px",
-                      borderRadius: "50%",
-                      backgroundColor: clr.color,
-                      cursor: "pointer",
-                      display: "inline-block",
-                    }}></span>
-                  <button onClick={() => setColors(colors.filter((a) => a.id !== clr.id))}>remove</button>
-                </div>
-              ))}
+            <div className="flex-h">
+              <label htmlFor="shadowblur">Blur: {shdblur}px</label>
+              <input
+                type="range"
+                name="shadowblur"
+                min={0}
+                max={100}
+                onChange={(e) => setShdblur(e.currentTarget.valueAsNumber)}
+                value={shdblur}
+              />
             </div>
-            <div className="control">
-              <label htmlFor="gradientdir">Gradient direction</label>
-              <select name="gradientdir" value={gradientDir} onChange={(e) => setGradientDir(e.currentTarget.value)}>
-                <option value="to top">Towards top</option>
-                <option value="to bottom">Towards bottom</option>
-                <option value="to left">Towards left</option>
-                <option value="to top left">Towards top left</option>
-                <option value="to bottom left">Towards bottom left</option>
-                <option value="to right">Towards right</option>
-                <option value="to top right">Towards top right</option>
-                <option value="to bottom right">Towards bottom right</option>
-              </select>
+            <div className="flex-h">
+              <label htmlFor="shadowopacity">Opacity {shdopacity}%</label>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                name="shadowopacity"
+                onChange={(e) => setShdopacity(e.currentTarget.valueAsNumber)}
+                value={shdopacity}
+              />
             </div>
-          </>
-        ) : (
-          <div className="control">
-            <label htmlFor="bg">Background color</label>
-            <input type="color" name="bg" value={bg} onChange={(e) => setBg(e.currentTarget.value)} />
           </div>
-        )}
+          <div className="control">
+            <span className="title">Background</span>
+            <div className="flex-h">
+              <label>Solid color</label>
+              <input
+                type="radio"
+                name="usegradient"
+                checked={useGradient ? false : true}
+                onChange={() => setUseGradient(false)}
+              />
+            </div>
+            <div className="flex-h">
+              <label>Gradient</label>
+              <input
+                type="radio"
+                name="usegradient"
+                checked={useGradient ? true : false}
+                onChange={() => setUseGradient(true)}
+              />
+            </div>
+            {useGradient ? (
+              <>
+                <div className="flex-h">
+                  <label htmlFor="gradientdir">Direction</label>
+                  <select
+                    name="gradientdir"
+                    value={gradientDir}
+                    onChange={(e) => setGradientDir(e.currentTarget.value)}>
+                    <option value={JSON.stringify({ start: { x: 0, y: h }, end: { x: 0, y: 0 } })}>To top</option>
+                    <option value={JSON.stringify({ start: { x: 0, y: 0 }, end: { x: 0, y: h } })}>To bottom</option>
+                    <option value={JSON.stringify({ start: { x: w, y: 0 }, end: { x: 0, y: 0 } })}>To left</option>
+                    <option value={JSON.stringify({ start: { x: w, y: h }, end: { x: 0, y: 0 } })}>To top left</option>
+                    <option value={JSON.stringify({ start: { x: w, y: 0 }, end: { x: 0, y: h } })}>
+                      To bottom left
+                    </option>
+                    <option value={JSON.stringify({ start: { x: 0, y: 0 }, end: { x: w, y: 0 } })}>To right</option>
+                    <option value={JSON.stringify({ start: { x: 0, y: h }, end: { x: w, y: 0 } })}>To top right</option>
+                    <option value={JSON.stringify({ start: { x: 0, y: 0 }, end: { x: w, y: h } })}>
+                      To bottom right
+                    </option>
+                  </select>
+                </div>
+                <div className="flex-h">
+                  <label htmlFor="addgradient">Add color</label>
+                  <input
+                    type="color"
+                    name="addgradient"
+                    onChange={(e) => setNewColor(e.currentTarget.value)}
+                    value={newColor}
+                  />
+                  <button onClick={() => setColors([...colors, { color: newColor, id: uuidv4() }])}>Add</button>
+                </div>
+                <span className="title">Gradient colors</span>
+                <div className="flex-v">
+                  {colors.map((clr) => (
+                    <div key={clr.id} className="flex-h">
+                      <span
+                        onClick={() => swap_color(clr.id)}
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
+                          backgroundColor: clr.color,
+                          cursor: "pointer",
+                          display: "inline-block",
+                        }}></span>
+                      <button onClick={() => setColors(colors.filter((a) => a.id !== clr.id))}>remove</button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="flex-h">
+                <label htmlFor="bg">Color</label>
+                <input type="color" name="bg" value={bg} onChange={(e) => setBg(e.currentTarget.value)} />
+              </div>
+            )}
+          </div>
+          <div className="control">
+            <span className="title">Export scale (resolution)</span>
+            <div className="flex-h">
+              <label htmlFor="scale">Scale</label>
+              <input
+                type="number"
+                name="scale"
+                value={scale}
+                onChange={(e) => setScale(e.currentTarget.valueAsNumber)}
+              />
+            </div>
+          </div>
+        </div>
+        <button type="button" onClick={save} className="save_btn">
+          Export
+        </button>
       </div>
-      <div className="workspace">
-        {source === "" ? (
+      <div className="workspace" ref={workspace_ref}>
+        {!source ? (
           <div
             className="file_zone"
             onDragOver={(e) => e.preventDefault()}
@@ -267,7 +276,9 @@ function App() {
               const fileList = Array.from(e.dataTransfer.files);
               const files: string[] = await Promise.all(fileList.map((ab) => readFileAsync(ab)));
               if (files.length > 0) {
-                setSource(files[0]);
+                const img = new Image();
+                img.src = files[0];
+                setSource(img);
               }
             }}
             onClick={(e) => {
@@ -285,7 +296,9 @@ function App() {
                   const fileList = Array.from(e.currentTarget.files);
                   const files: string[] = await Promise.all(Array.from(fileList).map((ab) => readFileAsync(ab)));
                   if (files.length > 0) {
-                    setSource(files[0]);
+                    const img = new Image();
+                    img.src = files[0];
+                    setSource(img);
                   }
                 }
               }}
@@ -301,27 +314,66 @@ function App() {
               const fileList = Array.from(e.dataTransfer.files);
               const files: string[] = await Promise.all(fileList.map((ab) => readFileAsync(ab)));
               if (files.length > 0) {
-                setSource(files[0]);
+                const img = new Image();
+                img.src = files[0];
+                setSource(img);
               }
             }}
-            ref={artboard}
-            style={{
-              background:
-                useGradient && colors.length >= 2
-                  ? `linear-gradient(${gradientDir}, ${colors.map((cl) => `${cl.color}`)})`
-                  : bg,
-              paddingLeft: `${pdl}px`,
-              paddingRight: `${pdr}px`,
-              paddingTop: `${pdt}px`,
-              paddingBottom: `${pdb}px`,
-            }}>
-            <img
-              src={source}
-              style={{
-                borderRadius: `${roundness}px`,
-                filter: `drop-shadow(0 0 ${shdblur}px rgba(${hexToRgb(shdcolor)}, ${shdopacity / 100}))`,
-              }}
-            />
+            ref={artboard}>
+            <Stage width={w} height={h} onWheel={(e) => e.evt.preventDefault()}>
+              <Layer>
+                <Rect
+                  width={w}
+                  height={h}
+                  fillLinearGradientStartPoint={JSON.parse(gradientDir)["start"]}
+                  fillLinearGradientEndPoint={JSON.parse(gradientDir)["end"]}
+                  fillLinearGradientColorStops={
+                    colors.length >= 2
+                      ? colors.reduce((acc: (string | number)[], cur, i) => {
+                          const index = (i * colors.length) / (colors.length - 1) - i;
+                          acc.push(index, cur.color);
+                          console.log(acc);
+                          return acc;
+                        }, [])
+                      : undefined
+                  }
+                  fill={useGradient ? undefined : bg}
+                />
+                <Kimage
+                  image={source}
+                  draggable={true}
+                  shadowBlur={shdblur}
+                  shadowColor={shdcolor}
+                  shadowOpacity={shdopacity / 100}
+                  shadowForStrokeEnabled={true}
+                  cornerRadius={roundness}
+                  stroke="transparent"
+                  onMouseOver={() => (document.body.style.cursor = "pointer")}
+                  onMouseOut={() => (document.body.style.cursor = "")}
+                  onWheel={(e) => {
+                    e.evt.preventDefault();
+                    const oldScale = e.target.scaleX();
+                    const pointer = e.target.getPosition();
+
+                    const mousePointTo = {
+                      x: (pointer.x - e.target.x()) / oldScale,
+                      y: (pointer.y - e.target.y()) / oldScale,
+                    };
+                    let direction = e.evt.deltaY > 0 ? 1 : -1;
+                    if (e.evt.ctrlKey) {
+                      direction = -direction;
+                    }
+                    const newScale = direction > 0 ? oldScale * 1.1 : oldScale / 1.1;
+                    e.target.scale({ x: newScale, y: newScale });
+                    const newPos = {
+                      x: pointer.x - mousePointTo.x * newScale,
+                      y: pointer.y - mousePointTo.y * newScale,
+                    };
+                    e.target.position(newPos);
+                  }}
+                />
+              </Layer>
+            </Stage>
           </div>
         )}
       </div>

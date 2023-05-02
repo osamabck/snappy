@@ -4,23 +4,44 @@
   display: flex;
   column-gap: 2rem;
   padding: 2rem;
-  .controls {
+  background-color: #444;
+  .sidebar {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-    background-color: #1a1a1a;
+    justify-content: space-between;
+    background-color: #222;
+    backdrop-filter: blur(5px);
     padding: 2rem;
-    overflow-y: auto;
     height: 100%;
     border-radius: 8px;
-    width: 300px;
-    button {
-      padding: 1rem;
-    }
-    .control {
+    width: 350px;
+    .controls {
       display: flex;
       flex-direction: column;
-      row-gap: 1rem;
+      gap: 1rem;
+      overflow-y: auto;
+      button {
+        padding: 1rem;
+      }
+      .control {
+        display: flex;
+        flex-direction: column;
+        row-gap: 1rem;
+        padding: 1rem;
+        border-radius: 4px;
+        background-color: #333;
+        .title {
+          font-size: 2rem;
+        }
+      }
+    }
+    .save_btn {
+      padding: 1rem 2rem;
+      cursor: pointer;
+    }
+    select,
+    input[type="number"] {
+      padding: 1rem 0.5rem;
     }
   }
   .workspace {
@@ -30,8 +51,11 @@
     height: 100%;
     width: 100%;
     overflow: auto;
+    background-color: #222;
+    backdrop-filter: blur(5px);
+    border-radius: 8px;
     .file_zone {
-      background-color: #444;
+      background-color: #222;
       width: 100%;
       height: 100%;
       display: flex;
@@ -50,14 +74,22 @@
     }
     .artboard {
       display: flex;
-      justify-content: stretch;
-      align-items: stretch;
-      box-sizing: unset;
-      align-content: stretch;
-      justify-items: stretch;
-      overflow: hidden;
-      min-width: max-content;
-      min-height: max-content;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid #fff;
     }
   }
+}
+
+.flex-h {
+  display: flex;
+  align-items: center;
+  column-gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.flex-v {
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.5rem;
 }
