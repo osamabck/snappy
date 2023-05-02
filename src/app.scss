@@ -8,31 +8,28 @@
   .sidebar {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     background-color: #222;
     backdrop-filter: blur(5px);
     padding: 2rem;
     height: 100%;
     border-radius: 8px;
     width: 350px;
-    .controls {
+    min-width: 350px;
+    max-width: 350px;
+    row-gap: 1rem;
+    position: relative;
+    overflow-y: auto;
+    .control {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
-      overflow-y: auto;
-      button {
-        padding: 1rem;
-      }
-      .control {
-        display: flex;
-        flex-direction: column;
-        row-gap: 1rem;
-        padding: 1rem;
-        border-radius: 4px;
-        background-color: #333;
-        .title {
-          font-size: 2rem;
-        }
+      row-gap: 1rem;
+      padding: 1rem;
+      border-radius: 4px;
+      width: 100%;
+      background-color: #333;
+      .title {
+        font-size: 1.8rem;
+        font-weight: 600;
       }
     }
     .save_btn {
@@ -41,7 +38,7 @@
     }
     select,
     input[type="number"] {
-      padding: 1rem 0.5rem;
+      padding: 0.5rem;
     }
   }
   .workspace {
@@ -86,6 +83,15 @@
   align-items: center;
   column-gap: 0.5rem;
   justify-content: space-between;
+  width: 100%;
+  input {
+    max-width: 100px;
+  }
+  button {
+    padding: 0.5rem;
+    width: 100%;
+    cursor: pointer;
+  }
 }
 
 .flex-v {
