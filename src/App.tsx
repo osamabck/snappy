@@ -10,7 +10,10 @@ function App() {
   const [bg, setBg] = useState("#fafafa");
   const [useGradient, setUseGradient] = useState(false);
   const [newColor, setNewColor] = useState("#000000");
-  const [colors, setColors] = useState<{ color: string; id: string }[]>([]);
+  const [colors, setColors] = useState<{ color: string; id: string }[]>([
+    { color: "#eee", id: uuidv4() },
+    { color: "#999", id: uuidv4() },
+  ]);
   const [shdblur, setShdblur] = useState(20);
   const [shdopacity, setShdopacity] = useState(50);
   const [shdcolor, setShdcolor] = useState("#000000");
@@ -124,10 +127,11 @@ function App() {
             <input
               type="number"
               name="width"
+              min={1}
               value={w}
               onChange={(e) => {
                 setAutocanvas(false);
-                setW(e.currentTarget.valueAsNumber);
+                setW(e.currentTarget.valueAsNumber < 1 ? 1 : e.currentTarget.valueAsNumber);
               }}
             />
           </div>
@@ -136,10 +140,11 @@ function App() {
             <input
               type="number"
               name="height"
+              min={1}
               value={h}
               onChange={(e) => {
                 setAutocanvas(false);
-                setH(e.currentTarget.valueAsNumber);
+                setH(e.currentTarget.valueAsNumber < 1 ? 1 : e.currentTarget.valueAsNumber);
               }}
             />
           </div>
@@ -177,7 +182,7 @@ function App() {
             Roundness
           </label>
           <div className="flex-h">
-            <span>Sharp</span>
+            <span>Square</span>
             <input
               type="range"
               name="roundness"
