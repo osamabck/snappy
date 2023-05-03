@@ -128,10 +128,12 @@ function App() {
               type="number"
               name="width"
               min={1}
+              pattern="[0-9]"
               value={w}
               onChange={(e) => {
                 setAutocanvas(false);
-                setW(e.currentTarget.valueAsNumber < 1 ? 1 : e.currentTarget.valueAsNumber);
+                if (!e.currentTarget.value.match(/[0-9]/)) setW(1);
+                else setW(e.currentTarget.valueAsNumber < 1 ? 1 : e.currentTarget.valueAsNumber);
               }}
             />
           </div>
@@ -142,9 +144,11 @@ function App() {
               name="height"
               min={1}
               value={h}
+              pattern="[0-9]"
               onChange={(e) => {
                 setAutocanvas(false);
-                setH(e.currentTarget.valueAsNumber < 1 ? 1 : e.currentTarget.valueAsNumber);
+                if (!e.currentTarget.value.match(/[0-9]/)) setH(1);
+                else setH(e.currentTarget.valueAsNumber < 1 ? 1 : e.currentTarget.valueAsNumber);
               }}
             />
           </div>
@@ -305,7 +309,17 @@ function App() {
           <span className="title">Export scale (resolution)</span>
           <div className="flex-h">
             <label htmlFor="scale">Scale factor</label>
-            <input type="number" name="scale" value={scale} onChange={(e) => setScale(e.currentTarget.valueAsNumber)} />
+            <input
+              type="number"
+              name="scale"
+              pattern="[0-9]"
+              min={1}
+              value={scale}
+              onChange={(e) => {
+                if (!e.currentTarget.value.match(/[0-9]/)) setScale(1);
+                else setScale(e.currentTarget.valueAsNumber < 1 ? 1 : e.currentTarget.valueAsNumber);
+              }}
+            />
           </div>
         </div>
         <button type="button" onClick={save} className="save_btn">
